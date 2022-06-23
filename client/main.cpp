@@ -244,6 +244,13 @@ int adb_server_main(int is_daemon, const std::string& socket_spec, const char* o
     return 0;
 }
 
+/**
+ *  adb client启动入口，即在PC主机上开启终端输入adb命令后的操作
+ * @param argc
+ * @param argv
+ * @param envp
+ * @return
+ */
 int main(int argc, char* argv[], char* envp[]) {
     __adb_argv = const_cast<const char**>(argv);
     __adb_envp = const_cast<const char**>(envp);

@@ -189,6 +189,12 @@ static void setup_adb(const std::vector<std::string>& addrs) {
     }
 }
 
+/**
+ *  adbd真实启动入口
+ *
+ * @param server_port
+ * @return
+ */
 int adbd_main(int server_port) {
     umask(0);
 
@@ -201,6 +207,7 @@ int adbd_main(int server_port) {
     }
 #endif
 
+    // 函数完成adbd接受PC端adb server连接功能的初始化工作
     init_transport_registration();
 
     // We need to call this even if auth isn't enabled because the file
@@ -234,6 +241,7 @@ int adbd_main(int server_port) {
     }
 
 #if defined(__ANDROID__)
+    // 函数负责是否要去掉adbd的root权限，降级为shell权限
     drop_privileges(server_port);
 #endif
 
@@ -244,6 +252,7 @@ int adbd_main(int server_port) {
 #endif
 
     // adbd_auth_init will spawn a thread, so we need to defer it until after selinux transitions.
+    // 函数负责完成对连入的PC端身份验证功能的初始化工作
     adbd_auth_init();
 
     bool is_usb = false;
@@ -251,6 +260,7 @@ int adbd_main(int server_port) {
 #if defined(__ANDROID__)
     if (access(USB_FFS_ADB_EP0, F_OK) == 0) {
         // Listen on USB.
+        // 如果可以usb调试，初始化usb，等待连接
         usb_init();
         is_usb = true;
     }
@@ -273,6 +283,7 @@ int adbd_main(int server_port) {
         }
 #endif
 
+        // 如果开启了网络调试，初始化端口，等待连接
         int port;
         if (sscanf(prop_port.c_str(), "%d", &port) == 1 && port > 0) {
             D("using tcp port=%d", port);
@@ -295,16 +306,25 @@ int adbd_main(int server_port) {
 
     LOG(INFO) << "adbd started";
 
+    //  初始化 java 调试框架
     D("adbd_main(): pre init_jdwp()");
     init_jdwp();
     D("adbd_main(): post init_jdwp()");
 
+    // 对监听的fd进行消息处理（死循环）
     D("Event loop starting");
     fdevent_loop();
 
     return 0;
 }
 
+/**
+ * adbd 启动入口，由Android系统的init进程拉起
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char** argv) {
 #if defined(__BIONIC__)
     // Set M_DECAY_TIME so that our allocations aren't immediately purged on free.
